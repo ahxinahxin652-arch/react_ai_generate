@@ -468,10 +468,16 @@ const App: React.FC = () => {
           console.log(`切换通道: 从通道${fromChannel} 切换，原因: ${reason}`);
           const reasonText = (reason || '').toLowerCase();
           const isTimeout = reasonText.includes('超时') || reasonText.includes('timeout');
-          if (isTimeout) {
+          if (isTimeout && fromChannel == 1) {
             showToast('⚠ 通道1超时，已切换到通道2...');
           } else {
             showToast('⚠ 通道1失败，已切换到通道2...');
+          }
+
+          if (isTimeout && fromChannel == 2) {
+            showToast('⚠ 通道2超时，已切换到通道3...');
+          } else {
+            showToast('⚠ 通道2失败，已切换到通道3...');
           }
         }
       });
