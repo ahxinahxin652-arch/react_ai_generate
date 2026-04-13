@@ -1,0 +1,5 @@
+@import "tailwindcss";
+
+.aspect-video-height {
+  height: 220px;
+}

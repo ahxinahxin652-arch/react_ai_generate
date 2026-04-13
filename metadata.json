@@ -1,0 +1,5 @@
+{
+  "name": "Cinema AI Studio",
+  "description": "A cinematic image generation studio simulating real camera lenses.",
+  "requestFramePermissions": []
+}
