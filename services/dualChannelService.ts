@@ -133,13 +133,11 @@ export const generateImageDualChannel = async (
     channel2Error = "当前环境不支持 Web Crypto API，无法使用百度 VOD 通道（可能是在受限的 iframe 或非 HTTPS 环境中）";
     console.error("❌ 通道2无法启动:", channel2Error);
     console.log("💡 建议：使用通道1（ai.t8star.cn）或在安全上下文中运行应用");
-    
-    return {
-      success: false,
-      error: "通道1、2均已生成失败",
-      channel1Error: channel1Error || undefined,
-      channel2Error,
-    };
+
+    // 通知通道切换
+    if (onChannelSwitch) {
+      onChannelSwitch(3, channel2Error);
+    }
   }
 
   try {
@@ -163,6 +161,11 @@ export const generateImageDualChannel = async (
   } catch (error: any) {
     channel2Error = error.message || error.toString();
     console.error("❌ 通道2失败:", channel2Error);
+
+    // 通知通道切换
+    if (onChannelSwitch) {
+      onChannelSwitch(3, channel2Error);
+    }
   }
 
   // ========== 通道 3: 阿里云万相 (Fallback 2) ==========
@@ -185,6 +188,7 @@ export const generateImageDualChannel = async (
       channelUsed: 3 as any,
     };
   } catch (error: any) {
+    channel3Error = error.message || error.toString();
     console.error("❌ 通道3失败:", error.message);
   }
 
