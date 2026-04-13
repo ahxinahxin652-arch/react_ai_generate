@@ -136,7 +136,7 @@ export const generateImageDualChannel = async (
 
     // 通知通道切换
     if (onChannelSwitch) {
-      onChannelSwitch(3, channel2Error);
+      onChannelSwitch(2, channel2Error);
     }
   }
 
@@ -164,7 +164,7 @@ export const generateImageDualChannel = async (
 
     // 通知通道切换
     if (onChannelSwitch) {
-      onChannelSwitch(3, channel2Error);
+      onChannelSwitch(2, channel2Error);
     }
   }
 
