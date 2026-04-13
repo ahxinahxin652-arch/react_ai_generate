@@ -1,6 +1,7 @@
 import { CameraSetup } from "../types";
 import { generateCinematicImageNano } from "./nanoBananaService";
 import { generateImageBaiduVOD } from "./baiduVODService";
+import { generateImageWanXiang } from "./wanXiangService";
 
 /**
  * 双通道图片生成服务
@@ -10,7 +11,8 @@ import { generateImageBaiduVOD } from "./baiduVODService";
  * 策略：
  * 1. 优先使用通道1（NanoBanana），超时时间3分钟
  * 2. 如果通道1失败或超时，自动切换到通道2（百度VOD）
- * 3. 如果两个通道都失败，返回失败信息
+ * 3. 如果通道2失败或超时，自动切换到通道3（万相API）
+ * 4. 如果三个通道都失败，返回失败信息
  */
 
 /**
@@ -36,6 +38,9 @@ interface GenerateImageOptions {
   // 通道2 (百度 VOD) 配置
   baiduAK?: string;
   baiduSK?: string;
+
+  // 通道3（万相）配置
+  aliyunApiKey?: string;
   
   // 通用参数
   prompt: string;
@@ -55,10 +60,11 @@ interface GenerateImageOptions {
 export interface DualChannelResult {
   success: boolean;
   imageUrl?: string;
-  channelUsed?: 1 | 2;
+  channelUsed?: 1 | 2 | 3;
   error?: string;
   channel1Error?: string;
   channel2Error?: string;
+  channel3Error?: string;
 }
 
 /**
@@ -71,6 +77,7 @@ export const generateImageDualChannel = async (
     nanoBananaApiKey,
     baiduAK,
     baiduSK,
+    aliyunApiKey,
     prompt,
     cameraSetup,
     aspectRatio = "16:9",
@@ -83,6 +90,7 @@ export const generateImageDualChannel = async (
 
   let channel1Error: string | null = null;
   let channel2Error: string | null = null;
+  let channel3Error: string | null = null;
 
   // ========== 通道1: NanoBanana ==========
   console.log("🚀 开始尝试通道1（ai.t8star.cn）...");
@@ -157,12 +165,36 @@ export const generateImageDualChannel = async (
     console.error("❌ 通道2失败:", channel2Error);
   }
 
-  // ========== 两个通道都失败 ==========
-  console.error("💥 通道1、2均已生成失败");
+  // ========== 通道 3: 阿里云万相 (Fallback 2) ==========
+  console.log("🔄 尝试通道3 (阿里云万相)...");
+  try {
+    const imageUrl = await generateImageWanXiang(
+        aliyunApiKey,
+        prompt,
+        cameraSetup,
+        aspectRatio,
+        zoomPrompt,
+        referenceImagesBase64,
+        resolution
+    );
+
+    console.log("✅ 通道3成功生成图片");
+    return {
+      success: true,
+      imageUrl,
+      channelUsed: 3 as any,
+    };
+  } catch (error: any) {
+    console.error("❌ 通道3失败:", error.message);
+  }
+
+  // ========== 三个通道都失败 ==========
+  console.error("💥 通道1、2、3均已生成失败");
   return {
     success: false,
-    error: "通道1、2均已生成失败",
+    error: "通道1、2、3均已生成失败",
     channel1Error: channel1Error || undefined,
     channel2Error: channel2Error || undefined,
+    channel3Error: channel3Error || undefined,
   };
 };

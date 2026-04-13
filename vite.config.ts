@@ -43,7 +43,14 @@ export default defineConfig(({ mode }) => {
               console.error('[代理] 错误:', err);
             });
           }
-        }
+        },
+        // 拦截所有以 /dashscope-api 开头的请求
+        '/dashscope-api': {
+          target: 'https://dashscope.aliyuncs.com', // 目标域名
+          changeOrigin: true, // 必须为 true，修改请求的 origin 为目标 origin
+          rewrite: (path) => path.replace(/^\/dashscope-api/, '') // 发送请求时去掉 /dashscope-api 前缀
+        },
+
       }
     },
     plugins: [react(),tailwindcss(),],
