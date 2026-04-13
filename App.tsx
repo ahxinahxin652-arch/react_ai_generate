@@ -5,7 +5,7 @@ import { CameraSetup, GenerationState, HistoryItem, GeneratedImage } from './typ
 import { generateCinematicImage } from './services/geminiService';
 import { generateCinematicImageNano } from './services/nanoBananaService';
 import { generateCinematicImageRunningHub } from './services/runningHubService';
-import { generateImageDualChannel } from './services/dualChannelService';
+import { generateImageDualChannel } from './services/tripleChannelService.ts';
 
 // SVGs
 const SparklesIcon = () => (
@@ -172,17 +172,20 @@ const App: React.FC = () => {
   const [showResMenu, setShowResMenu] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+
+  // 阿里云（万相） API-KEY（通道1）
+  const [aliyunApiKey, setAliyunApiKey] = useState<string>('');
+
+  // NanoBanana API-KEY（通道2）
   const [userApiKey, setUserApiKey] = useState<string>('');
   const [apiProvider, setApiProvider] = useState<ApiProvider>('nanoBanana');
 
-  // 百度云 VOD 凭证（用于双通道备份）
+  // 百度云 VOD 凭证（通道3）
   const [baiduAK, setBaiduAK] = useState<string>('');
   const [baiduSK, setBaiduSK] = useState<string>('');
 
   const [activeTab, setActiveTab] = useState<Tab>('body');
 
-  // 阿里云（万相） API-KEY
-  const [aliyunApiKey, setAliyunApiKey] = useState<string>('');
 
   // Image Upload State
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
@@ -440,17 +443,19 @@ const App: React.FC = () => {
     try {
       const zoomPrompt = ZOOM_OPTIONS[zoomIndex].prompt;
 
-      // 使用多通道服务（nanoBanana + 百度VOD备份 + 万相通道3）
+      // 使用多通道服务（万相通道3 + nanoBanana + 百度VOD备份）
       const result = await generateImageDualChannel({
-        // 通道1: NanoBanana
+        // 通道1：阿里云API KEY
+        aliyunApiKey: aliyunApiKey || undefined,
+
+        // 通道2: NanoBanana
         nanoBananaApiKey: userApiKey,
 
-        // 通道2: 百度VOD
+        // 通道3: 百度VOD
         baiduAK: baiduAK || undefined,
         baiduSK: baiduSK || undefined,
 
-        // 通道3：阿里云API KEY (传递进去！)
-        aliyunApiKey: aliyunApiKey || undefined,
+
 
         // 通用参数
         prompt: currentPrompt,
@@ -462,6 +467,9 @@ const App: React.FC = () => {
 
         // 通道1超时时间：3分钟
         channel1Timeout: 180000,
+
+        // 通道2超时时间：3分钟
+        channel2Timeout: 180000,
 
         // 通道切换回调
         onChannelSwitch: (fromChannel, reason) => {
@@ -1653,17 +1661,42 @@ const App: React.FC = () => {
           >
             {/* 通道说明 */}
             <div className="bg-[#0F1113] border border-[#2A2C30] rounded-lg p-3">
-              <h4 className="text-xs font-bold text-orange-400 mb-2">双通道生成策略</h4>
+              <h4 className="text-xs font-bold text-orange-400 mb-2">三通道生成策略</h4>
               <div className="text-xs text-gray-400 space-y-1">
-                <p>• 通道1: ai.t8star.cn (优先使用)</p>
-                <p>• 通道2: 百度云 VOD (备用)</p>
+                <p>• 通道1: 万相大模型 (优先使用)</p>
+                <p>• 通道2: ai.t8star.cn (备用)</p>
+                <p>• 通道3: 百度云 VOD (备用)</p>
                 <p className="mt-2 text-gray-500">若通道1超过3分钟或失败，自动切换到通道2</p>
               </div>
             </div>
 
             {/* 通道1配置 */}
+            <div className="border-t border-[#2A2C30] pt-4">
+              <h4 className="text-xs font-bold text-gray-300 mb-3">通道1 阿里云万相 (WanXiang)</h4>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-gray-400 mb-1 block">DashScope API Key</label>
+                  <input
+                      type="password"
+                      value={aliyunApiKey}
+                      onChange={(e) => setAliyunApiKey(e.target.value)}
+                      placeholder="输入阿里云 API Key"
+                      className="w-full bg-[#0F1113] border border-[#2A2C30] rounded-lg px-3 py-2 text-xs text-gray-200 focus:border-orange-500 focus:outline-none font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-3 bg-[#1B1D20] border border-orange-500/20 rounded-lg p-2">
+                <p className="text-xs text-orange-400">
+                  💡 优先通道1：使用 wan2.7-image-pro 模型进行高质量生图。
+                </p>
+              </div>
+            </div>
+
+            {/* 通道2配置 */}
             <div>
-              <h4 className="text-xs font-bold text-gray-300 mb-2">通道1 API Key</h4>
+              <h4 className="text-xs font-bold text-gray-300 mb-2">通道2 API Key</h4>
               <input
                   type="text"
                   value={userApiKey}
@@ -1673,9 +1706,9 @@ const App: React.FC = () => {
               />
             </div>
 
-            {/* 通道2配置 */}
+            {/* 通道3配置 */}
             <div className="border-t border-[#2A2C30] pt-4">
-              <h4 className="text-xs font-bold text-gray-300 mb-3">通道2 百度云凭证</h4>
+              <h4 className="text-xs font-bold text-gray-300 mb-3">通道3 百度云凭证</h4>
 
               <div className="space-y-3">
                 <div>
@@ -1703,31 +1736,7 @@ const App: React.FC = () => {
 
               <div className="mt-3 bg-[#1B1D20] border border-blue-500/20 rounded-lg p-2">
                 <p className="text-xs text-blue-400">
-                  💡 百度云凭证将作为备用通道，仅在通道1失败时使用
-                </p>
-              </div>
-            </div>
-
-            {/* 通道3配置 */}
-            <div className="border-t border-[#2A2C30] pt-4">
-              <h4 className="text-xs font-bold text-gray-300 mb-3">通道3 阿里云万相 (WanXiang)</h4>
-
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs text-gray-400 mb-1 block">DashScope API Key</label>
-                  <input
-                      type="password"
-                      value={aliyunApiKey}
-                      onChange={(e) => setAliyunApiKey(e.target.value)}
-                      placeholder="输入阿里云 API Key"
-                      className="w-full bg-[#0F1113] border border-[#2A2C30] rounded-lg px-3 py-2 text-xs text-gray-200 focus:border-orange-500 focus:outline-none font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-3 bg-[#1B1D20] border border-orange-500/20 rounded-lg p-2">
-                <p className="text-xs text-orange-400">
-                  💡 备用通道3：使用 wan2.7-image-pro 模型进行高质量生图。
+                  💡 百度云凭证将作为备用通道，仅在通道1、2失败时使用
                 </p>
               </div>
             </div>

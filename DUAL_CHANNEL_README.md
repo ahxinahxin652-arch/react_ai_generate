@@ -79,7 +79,7 @@
 services/
 ├── nanoBananaService.ts     # 通道1服务
 ├── baiduVODService.ts       # 通道2服务
-└── dualChannelService.ts    # 双通道故障转移逻辑
+└── tripleChannelService.ts    # 双通道故障转移逻辑
 ```
 
 ### API 文档
